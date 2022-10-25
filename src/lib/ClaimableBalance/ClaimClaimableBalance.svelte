@@ -28,6 +28,7 @@
   }
 
   // TODO: handle more than just native() asset?
+  // TODO: do some checking for if balances are available or not yet
 
   // claim the selected claimable balances
   const claimSelectedBalances = async () => {
@@ -36,26 +37,26 @@
     const server = new StellarSdk.Server('https://horizon-testnet.stellar.org');
     const account = await server.loadAccount($claimant);
 
+    // begin the transaction
     let transaction = new StellarSdk.TransactionBuilder(
       account, {
         fee: StellarSdk.BASE_FEE,
         networkPassphrase: StellarSdk.Networks.TESTNET
       });
 
+    // add a claim operation for each selected balance
     $selectedCBs.forEach(cbId => {
       transaction.addOperation(StellarSdk.Operation.claimClaimableBalance({
         balanceId: cbId
       }))
     })
 
+    // build, sign, submit the transaction
     transaction = transaction.setTimeout(30).build()
     transaction.sign(keypair)
     try {
       let res = await server.submitTransaction(transaction);
-      // console.log(`Transaction Successful! Hash: ${res.hash}`)
       txHash.set(res.hash);
-      // console.log(`Claimable Balance ID: ${transaction.getClaimableBalanceId(0)}`)
-      // cbId.set(transaction.getClaimableBalanceId(0));
     } catch (error) {
       console.error(`${error}. More details:\n${JSON.stringify(error.response.data.extras, null, 2)}`)
     }
